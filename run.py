@@ -1,5 +1,6 @@
-"""2026 pipeline: collect live data -> train -> evaluate -> charts.  `python run.py`"""
+﻿"""2026 pipeline: collect live data -> train -> evaluate -> charts.  `python run.py`"""
 import json
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -32,8 +33,9 @@ def save(fig, name):
 
 
 def main():
-    print("1/3 collecting 2026 data + training")
-    data, te, fut, m, model = run()
+    refresh = "--refresh" in sys.argv
+    print("1/3 training on bundled 2026 data" + (" (refreshed)" if refresh else ""))
+    data, te, fut, m, model = run(refresh=refresh)
     Path("results.json").write_text(json.dumps(m, indent=2, default=str))
     print(json.dumps(m, indent=2, default=str))
     mm = data[data.city == TARGET_CITY]
@@ -122,44 +124,8 @@ def main():
     ax.set_title("What drives congestion? (permutation importance, MAE pts)")
     ax.grid(axis="x", alpha=.4)
     save(fig, "08_feature_importance.png")
-    segment_charts()
     print("3/3 done")
 
-
-def segment_charts():
-    from src import segments
-    seg = segments.load()
-    if seg is None or seg.empty:
-        print("  (no segment data yet: set TOMTOM_API_KEY to collect EDSA segment speeds)")
-        return
-    order = [s for r, s, *_ in segments.SEGMENTS if r == "EDSA"]
-    edsa = seg[seg.road == "EDSA"]
-    avg = edsa.groupby("segment").speed_kph.mean().reindex(order)
-    fig, ax = plt.subplots(figsize=(14, 9))
-    cols = [ACC3 if v < 15 else ACC if v < 25 else "#2ea043" for v in avg.values]
-    ax.barh(avg.index[::-1], avg.values[::-1], color=cols[::-1])
-    for i, v in enumerate(avg.values[::-1]):
-        ax.text(v + .3, i, f"{v:.0f} km/h", va="center")
-    ax.set_title(f"EDSA average speed by segment, north to south ({len(edsa.timestamp.unique())} hourly readings)")
-    ax.grid(axis="x", alpha=.4)
-    save(fig, "09_edsa_segments.png")
-
-    piv = edsa.assign(hour=edsa.timestamp.dt.hour).pivot_table("speed_kph", "segment", "hour") \
-        .reindex(index=order, columns=range(24))
-    fig, ax = plt.subplots(figsize=(16, 8))
-    im = ax.imshow(piv, aspect="auto", cmap="RdYlGn")
-    ax.set_yticks(range(len(order)), order)
-    ax.set_xticks(range(0, 24, 2), [f"{h}:00" for h in range(0, 24, 2)])
-    ax.set_title("Where and when EDSA jams: speed by segment and hour (km/h)")
-    fig.colorbar(im, ax=ax, label="km/h")
-    save(fig, "10_edsa_segment_heatmap.png")
-
-    worst = seg.groupby(["road", "segment"]).speed_ratio.mean().nsmallest(10)[::-1]
-    fig, ax = plt.subplots(figsize=(14, 8))
-    ax.barh([f"{r} – {s}" for r, s in worst.index], (1 - worst.values) * 100, color=ACC3)
-    ax.set_title("Top 10 worst spots: % below free-flow speed")
-    ax.grid(axis="x", alpha=.4)
-    save(fig, "11_worst_spots.png")
 
 
 if __name__ == "__main__":

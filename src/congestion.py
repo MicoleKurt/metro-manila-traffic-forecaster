@@ -3,6 +3,7 @@
 """
 import json
 import urllib.request
+from pathlib import Path
 
 import holidays
 import numpy as np
@@ -39,11 +40,19 @@ def add_calendar(f: pd.DataFrame) -> pd.DataFrame:
     return f
 
 
-def run(test_hours: int = 48):
-    live = live_traffic.collect()
+WX_FILE = Path("live/weather.csv")
+
+
+def run(test_hours: int = 48, refresh: bool = False):
+    """Self-contained by default: trains on the data snapshot bundled in live/.
+    refresh=True pulls the newest public data first (no API key needed)."""
+    if refresh or not live_traffic.OUT.exists():
+        live = live_traffic.collect()
+        days = (pd.Timestamp.now().normalize() - live.timestamp.min().normalize()).days + 2
+        pd.concat([weather(c, days) for c in COORDS]).to_csv(WX_FILE, index=False)
+    live = live_traffic.load()
     live = live[live.timestamp.dt.year == 2026].copy()
-    days = (pd.Timestamp.now().normalize() - live.timestamp.min().normalize()).days + 2
-    wx = pd.concat([weather(c, days) for c in COORDS])
+    wx = pd.read_csv(WX_FILE, parse_dates=["timestamp"])
 
     data = live.rename(columns={"traffic_index_live": "congestion", "traffic_index_usual": "usual"})
     data = add_calendar(data.merge(wx, on=["city", "timestamp"], how="left")

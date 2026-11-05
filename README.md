@@ -1,6 +1,6 @@
-# 🚦 Metro Manila Traffic Forecaster (2026, live)
+﻿# 🚦 Metro Manila Traffic Forecaster (2026, live)
 
-A machine-learning project built on **real 2026 traffic data**, collected live every 6 hours. It tracks Metro Manila congestion hour by hour and forecasts the next 48 hours.
+A self-contained machine-learning project built on **real 2026 traffic data**. It tracks Metro Manila congestion hour by hour and forecasts the next 48 hours.
 
 ![Live vs usual](assets/01_live_vs_usual.png)
 
@@ -8,11 +8,11 @@ A machine-learning project built on **real 2026 traffic data**, collected live e
 
 | Dataset | What | Source |
 |---|---|---|
-| **Live hourly congestion**: congestion %, usual-for-this-hour, jam count / length / delay | Metro Manila and Davao City. **Collected so far: Oct 30 to Nov 6, 2026**, with new hours added every 6 hours | [TomTom Traffic Index](https://www.tomtom.com/traffic-index/city/manila/) live feed |
+| **Live hourly congestion**: congestion %, usual-for-this-hour, jam count / length / delay | Metro Manila and Davao City. **Oct 30 to Nov 6, 2026**, bundled in the repo | [TomTom Traffic Index](https://www.tomtom.com/traffic-index/city/manila/) live feed |
 | **Rainfall**: observed and 3-day forecast, hourly | Metro Manila and Davao City | [Open-Meteo](https://open-meteo.com) |
 | **Holidays** | 2026 regular and special non-working days | [`holidays`](https://pypi.org/project/holidays/) (Proclamation 1006, 2025) |
 
-The data lives in [`live/manila_hourly.csv`](live/manila_hourly.csv). The GitHub Action [`collect.yml`](.github/workflows/collect.yml) pulls the TomTom feed every 6 hours and commits new rows, so the dataset keeps growing on its own.
+The data snapshot is bundled in [`live/`](live/), so the model trains and runs **offline, with no API keys and no scheduled jobs**. To pull newer hours whenever you want, run `python run.py --refresh` or click **Refresh data** in the dashboard. Both use the public feed, with no key.
 
 *Congestion % is the extra travel time compared with free-flowing traffic. 100% means a trip takes twice as long.*
 
@@ -28,23 +28,6 @@ The data lives in [`live/manila_hourly.csv`](live/manila_hourly.csv). The GitHub
 | ![](assets/02_heatmap_by_day.png) | ![](assets/05_daytype_profile.png) |
 | ![](assets/03_jams.png) | ![](assets/04_manila_vs_davao.png) |
 
-## 📍 Where is the traffic? EDSA segment by segment
-[`src/segments.py`](src/segments.py) records live speeds every hour at **25 points**:
-- **EDSA (16 segments, north to south):** Monumento, Balintawak, Roosevelt, North Ave, Quezon Ave, Kamuning, Cubao, Santolan, Ortigas, Shaw, Guadalupe, Buendia, Ayala, Magallanes, Taft, MOA
-- **Other roads:** C5, Commonwealth, Quezon Ave, España, Marcos Hwy and SLEX
-
-From these readings, the project produces:
-- a live map with green/yellow/red markers
-- a "worst spots right now" ranking
-- an EDSA segment × hour heatmap showing where and when EDSA jams
-- a chart of the top 10 worst spots
-
-**Setup (one time, free):**
-1. Get a key at [developer.tomtom.com](https://developer.tomtom.com). The free tier allows 2,500 calls/day, and this uses 600.
-2. Add it to the repo under Settings → Secrets → Actions as `TOMTOM_API_KEY`.
-
-The hourly Action then fills [`live/segments.csv`](live/). After a day of readings, `python run.py` adds charts `09_edsa_segments.png`, `10_edsa_segment_heatmap.png` and `11_worst_spots.png`.
-
 ## Model: 48-hour congestion forecast
 - **Target:** Metro Manila congestion %, hourly.
 - **Features:** hour, weekday, city, TomTom usual-for-this-hour, rainfall (this hour and the last 3 hours), holiday.
@@ -56,7 +39,7 @@ The hourly Action then fills [`live/segments.csv`](live/). After a day of readin
 | TomTom "usual for this hour" | 39.5 |
 | **This model** | **11.9** |
 
-That's **70% lower error** than TomTom's own typical-traffic estimate. The model is retrained on every run, so it improves as more weeks are collected.
+That's **70% lower error** than TomTom's own typical-traffic estimate. The model retrains on every run.
 
 ![Test](assets/06_test_actual_vs_pred.png)
 ![Forecast](assets/07_forecast_48h.png)
@@ -73,8 +56,9 @@ The dashboard has three tabs:
 
 ## Rebuild
 ```bash
-python run.py   # pulls the latest data, retrains, regenerates assets/ and results.json
+python run.py             # offline: trains on the bundled data, writes assets/ and results.json
+python run.py --refresh   # optional: pull the newest public data first
 ```
 
 ## Tech
-Python · pandas · scikit-learn · matplotlib · Streamlit · GitHub Actions
+Python · pandas · scikit-learn · matplotlib · Streamlit
