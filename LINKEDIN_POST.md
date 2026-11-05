@@ -1,4 +1,4 @@
-﻿🚦 Metro Manila traffic this week ran 41% worse than usual. I built a model that forecasts it 48 hours ahead.
+﻿🚦 Metro Manila traffic this week ran 41% worse than usual. I built a model that forecasts it for any day or week ahead.
 
 My Metro Manila Traffic Forecaster runs on real, live 2026 data:
 📡 TomTom's hourly congestion data for Metro Manila and Davao
@@ -11,7 +11,7 @@ What the data shows (Oct 30 – Nov 6, 2026):
 🕯️ The Undas long weekend was the only time traffic dropped below normal
 🏙️ Metro Manila averaged 69% congestion vs 56% for Davao City
 
-📈 The forecast missed by 11.9 points on average over the last 48 hours. TomTom's own "usual traffic" estimate missed by 39.5, so that's 70% less error.
+📈 Tested on 48 hours it had never seen, the model missed by 15.1 points on average. TomTom's own "usual traffic" estimate missed by 39.5, so that's 62% less error. Run it and it forecasts from today forward, with holidays and the rain forecast built in.
 
 Built with Python, scikit-learn and Streamlit. It's fully self-contained, with no API keys required.
 

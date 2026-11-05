@@ -1,6 +1,6 @@
 ﻿"""2026 pipeline: collect live data -> train -> evaluate -> charts.  `python run.py`"""
+import argparse
 import json
-import sys
 from pathlib import Path
 
 import matplotlib
@@ -33,9 +33,23 @@ def save(fig, name):
 
 
 def main():
-    refresh = "--refresh" in sys.argv
-    print("1/3 training on bundled 2026 data" + (" (refreshed)" if refresh else ""))
-    data, te, fut, m, model = run(refresh=refresh)
+    ap = argparse.ArgumentParser(description="Train on real 2026 data and forecast any future dates")
+    ap.add_argument("--days", type=float, default=7, help="how many days to forecast (default 7)")
+    ap.add_argument("--start", default=None, help="forecast start date, e.g. 2026-12-20 (default: now)")
+    ap.add_argument("--city", default="Metro Manila", choices=["Metro Manila", "Davao City"])
+    ap.add_argument("--refresh", action="store_true", help="pull the newest public data first (optional)")
+    a = ap.parse_args()
+    print("1/3 training on bundled 2026 data" + (" (refreshed)" if a.refresh else ""))
+    data, te, fut, m, model = run(refresh=a.refresh, start=a.start, days=a.days, city=a.city)
+    fut.to_csv("forecast.csv", index=False)
+    daily = fut.groupby(fut.timestamp.dt.date).agg(avg=("forecast", "mean"), peak=("forecast", "max"),
+                                                    holiday=("is_holiday", "max"), rain_mm=("rain_mm", "sum"))
+    peak_hr = fut.loc[fut.groupby(fut.timestamp.dt.date).forecast.idxmax()].set_index(fut.timestamp.dt.date.unique())
+    daily["peak_at"] = peak_hr.timestamp.dt.strftime("%I %p").values
+    print(f"\nForecast for {a.city}, {fut.timestamp.min():%a %b %d %Y} + {a.days:g} days "
+          f"(rain: {fut.rain_source.iloc[0]}):")
+    print(daily.round(1).to_string())
+    print("saved forecast.csv")
     Path("results.json").write_text(json.dumps(m, indent=2, default=str))
     print(json.dumps(m, indent=2, default=str))
     mm = data[data.city == TARGET_CITY]
@@ -106,14 +120,14 @@ def main():
     save(fig, "06_test_actual_vs_pred.png")
 
     # 7 forecast
-    hist = mm[mm.timestamp >= mm.timestamp.max() - pd.Timedelta(hours=48)]
+    hist = mm[(mm.timestamp >= fut.timestamp.min() - pd.Timedelta(hours=48)) & (mm.timestamp < fut.timestamp.min())]
     fig, ax = plt.subplots(figsize=(16, 7))
     ax.plot(hist.timestamp, hist.congestion, color=FG, lw=2, label="Actual (live)")
     ax.fill_between(fut.timestamp, fut.lo, fut.hi, color=ACC, alpha=.25, label="80% interval")
     ax.plot(fut.timestamp, fut.forecast, color=ACC, lw=2.4, label="Forecast")
-    ax.set_title(f"Next 48 hours: Metro Manila congestion forecast (from {fut.timestamp.min():%b %d %I %p})")
+    ax.set_title(f"Congestion forecast: {fut.city.iloc[0]}, {fut.timestamp.min():%a %b %d} to {fut.timestamp.max():%a %b %d, %Y}")
     ax.set_ylabel("congestion %"); ax.grid(alpha=.4); ax.legend()
-    save(fig, "07_forecast_48h.png")
+    save(fig, "07_forecast.png")
 
     # 8 importance
     pi = permutation_importance(model, data[FEATS], data.congestion, n_repeats=5, random_state=0,

@@ -10,7 +10,7 @@ Copy this into any AI coding assistant to rebuild the project.
 
 **Data (real, current only):** TomTom Traffic Index live hourly congestion feed (Metro Manila + Davao City), bundled as a CSV snapshot; optional --refresh pulls newer hours (no API key, no scheduled jobs); Open-Meteo observed + forecast rainfall; 2026 PH holidays.
 
-**Model:** HistGradientBoosting on hour, weekday, city, TomTom usual, rain, holiday. Hold out the last 48 h; compare MAE against TomTom 'usual'.
+**Model:** predict excess over TomTom's weekly 'usual' profile with HistGradientBoosting (hour, weekend, holiday, rain, city). Hold out the last 48 h and compare MAE against TomTom 'usual'. The CLI forecasts any future dates from today (--days, --start, --city) using official holidays for any year and the Open-Meteo rain forecast, with no new traffic data needed.
 
 **Visuals:** live vs usual, day-by-hour heatmap, jam length, Manila vs Davao, weekday/weekend/holiday profile, test fit, 48 h forecast, feature importance. Streamlit dashboard.
 
