@@ -1,21 +1,18 @@
-🚦 Can machine learning predict EDSA traffic?
+🚦 I mapped 17,000 real MMDA traffic incidents and trained a model to forecast them.
 
-I built a Metro Manila Traffic Forecaster that predicts hourly travel speed on 7 major corridors: EDSA, C5, Commonwealth, España, Roxas Blvd, SLEX and NLEX.
+Using real MMDA incident alerts (2018–2020), hourly ERA5 rainfall and official PH holidays, I built a Metro Manila Traffic Incident Forecaster.
 
-What the model learned (no surprise to any Filipino commuter 😅):
-🌧️ A typhoon day can cut EDSA rush-hour speed by more than half
-🎄 The "ber months" make the evening rush slower every year, and December is the worst
-💸 Payday Fridays are their own kind of chaos
-🕕 6–7 PM on a Friday is the slowest hour of the week
+What the data showed:
+📍 EDSA is the hotspot. The incident map traces EDSA, C5 and Commonwealth almost exactly.
+🕗 Incidents peak during the morning and evening rush hours.
+🦠 The 2020 ECQ cut reported incidents by about 95%, from ~28 a day to ~1.
+🌧️ Light rain increases incidents per hour, but heavy rain doesn't. Fewer cars on the road during downpours likely offsets the risk.
+🚗 About 70% of alerts are vehicular accidents.
 
-📊 Results: a gradient-boosting model cut prediction error by 16% compared with a historical-average baseline (MAE 2.23 km/h, R² 0.97) on 6 months of unseen data.
+📊 The model is a Poisson gradient-boosting model with a time-based train/test split. On 4 months of unseen data it beat the historical-average baseline by 8% on daily incident counts.
 
-The data is calibrated to real figures: EDSA averages ~21 km/h (MMDA), rush hour in Manila averages 15.2 km/h (TomTom Traffic Index 2025), and EDSA carries 407k+ vehicles a day.
+Every number comes from public data: MMDA, Open-Meteo/ERA5 and the official holiday proclamations.
 
-The features are built for the Philippines: Holy Week, payday (the 15th and 30th), MMDA number coding, PAGASA rainy season and typhoons.
+🔗 https://github.com/MicoleKurt/metro-manila-traffic-forecaster
 
-Note: the data is synthetic and calibrated to public MMDA, TomTom and PAGASA patterns. A loader for real data is included, and connecting live data is the next step.
-
-🔗 Code + charts: [GitHub link]
-
-#MachineLearning #DataScience #Python #Philippines #MetroManila #EDSA #Traffic #Portfolio
+#MachineLearning #DataScience #Python #Philippines #MetroManila #EDSA #MMDA #Traffic #OpenData
