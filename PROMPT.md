@@ -1,4 +1,4 @@
-﻿# Master Prompt: Metro Manila Traffic Incident Forecaster
+﻿# Master Prompt: Metro Manila Traffic Forecaster (2026, live)
 
 Copy this into any AI coding assistant to rebuild the project.
 
