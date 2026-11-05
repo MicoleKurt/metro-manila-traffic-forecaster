@@ -2,7 +2,7 @@ name: Collect live traffic
 
 on:
   schedule:
-    - cron: "15 */6 * * *"   # every 6 hours (the feed holds the last 7 days)
+    - cron: "5 * * * *"   # every hour
   workflow_dispatch:
 
 permissions:
@@ -11,18 +11,23 @@ permissions:
 jobs:
   collect:
     runs-on: ubuntu-latest
+    env:
+      TOMTOM_API_KEY: ${{ secrets.TOMTOM_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: pip install pandas
-      - name: Fetch TomTom live congestion (Metro Manila, Davao)
+      - name: City-wide congestion (TomTom Traffic Index feed, no key)
         run: python -m src.live_traffic
+      - name: Per-segment speeds on EDSA and major roads (needs TOMTOM_API_KEY)
+        if: ${{ env.TOMTOM_API_KEY != '' }}
+        run: python -m src.segments
       - name: Commit new rows
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add live/manila_hourly.csv
-          git diff --cached --quiet || git commit -m "data: live congestion $(date -u +%FT%H:%MZ)"
-          git push
+          git add live/
+          git diff --cached --quiet || git commit -m "data: live traffic $(date -u +%FT%H:%MZ)"
+          git pull --rebase -q && git push

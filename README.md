@@ -28,6 +28,23 @@ The data lives in [`live/manila_hourly.csv`](live/manila_hourly.csv). The GitHub
 | ![](assets/02_heatmap_by_day.png) | ![](assets/05_daytype_profile.png) |
 | ![](assets/03_jams.png) | ![](assets/04_manila_vs_davao.png) |
 
+## 📍 Where is the traffic? EDSA segment by segment
+[`src/segments.py`](src/segments.py) records live speeds every hour at **25 points**:
+- **EDSA (16 segments, north to south):** Monumento, Balintawak, Roosevelt, North Ave, Quezon Ave, Kamuning, Cubao, Santolan, Ortigas, Shaw, Guadalupe, Buendia, Ayala, Magallanes, Taft, MOA
+- **Other roads:** C5, Commonwealth, Quezon Ave, España, Marcos Hwy and SLEX
+
+From these readings, the project produces:
+- a live map with green/yellow/red markers
+- a "worst spots right now" ranking
+- an EDSA segment × hour heatmap showing where and when EDSA jams
+- a chart of the top 10 worst spots
+
+**Setup (one time, free):**
+1. Get a key at [developer.tomtom.com](https://developer.tomtom.com). The free tier allows 2,500 calls/day, and this uses 600.
+2. Add it to the repo under Settings → Secrets → Actions as `TOMTOM_API_KEY`.
+
+The hourly Action then fills [`live/segments.csv`](live/). After a day of readings, `python run.py` adds charts `09_edsa_segments.png`, `10_edsa_segment_heatmap.png` and `11_worst_spots.png`.
+
 ## Model: 48-hour congestion forecast
 - **Target:** Metro Manila congestion %, hourly.
 - **Features:** hour, weekday, city, TomTom usual-for-this-hour, rainfall (this hour and the last 3 hours), holiday.
