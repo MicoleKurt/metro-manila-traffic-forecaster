@@ -1,24 +1,10 @@
 {
-  "test_period": "2020-09-01 to 2020-12-27",
-  "hourly_MAE": {
-    "baseline": 0.5540123456790124,
-    "model": 0.5219776869459215
-  },
-  "hourly_poisson_deviance": {
-    "baseline": 7.490823491745103,
-    "model": 1.4155153247376457
-  },
-  "daily_MAE": {
-    "baseline": 5.370370370370369,
-    "model": 4.96186203355989
-  },
-  "mean_daily_incidents_test": 10.935185185185185,
-  "live_congestion": {
-    "train_hours": 120,
-    "test_hours": 48,
-    "test_period": "2026-11-04 05:00:00 -> 2026-11-06 04:00:00",
-    "MAE_model": 15.915489207010557,
-    "MAE_tomtom_usual": 39.458333333333336,
-    "MAE_typical_2025": 43.75208333333333
-  }
+  "data_range": "2026-10-30 05:00:00 -> 2026-11-06 04:00:00",
+  "hours_collected": 336,
+  "train_rows": 240,
+  "test_hours": 48,
+  "test_period": "2026-11-04 05:00:00 -> 2026-11-06 04:00:00",
+  "MAE_model": 11.91,
+  "MAE_tomtom_usual": 39.46,
+  "MAE_same_hour_last_week": null
 }
