@@ -12,5 +12,13 @@
     "baseline": 5.370370370370369,
     "model": 4.96186203355989
   },
-  "mean_daily_incidents_test": 10.935185185185185
+  "mean_daily_incidents_test": 10.935185185185185,
+  "live_congestion": {
+    "train_hours": 120,
+    "test_hours": 48,
+    "test_period": "2026-11-04 05:00:00 -> 2026-11-06 04:00:00",
+    "MAE_model": 15.915489207010557,
+    "MAE_tomtom_usual": 39.458333333333336,
+    "MAE_typical_2025": 43.75208333333333
+  }
 }

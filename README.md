@@ -1,78 +1,75 @@
-# 🚦 Metro Manila Traffic Incident Forecaster
+# 🚦 Metro Manila Traffic Forecaster
 
-A machine-learning project built on **100% real data**. It forecasts how many road incidents (accidents, stalled vehicles, flooding) the MMDA will report each hour in Metro Manila, and shows where, when and why they happen.
+A machine-learning project built on **100% real data, updated every 6 hours**. It tracks and forecasts Metro Manila congestion using TomTom's live traffic feed, and explains where, when and why road incidents happen using 17,000 MMDA incident alerts.
 
-![Hotspots](assets/03_hotspot_map.png)
+![This week](assets/09_live_this_week.png)
 
-## Data (all real, all public)
+## Data (all real, all public, no API keys)
 
-| Dataset | What | Source |
+| Dataset | Coverage | Source |
 |---|---|---|
-| MMDA incident alerts | **17,128** geocoded incidents from Aug 2018 to Dec 2020: time, location, lat/long, type, lanes blocked | @MMDA alerts, parsed by [Tweet2Map](https://github.com/pbrotoisworo/tweet2map) (GPL-3.0) |
-| Hourly rainfall, Manila | ERA5 reanalysis precipitation | [Open-Meteo Historical API](https://open-meteo.com/en/docs/historical-weather-api) (CC BY 4.0) |
-| Public holidays | Regular and special non-working days | [`holidays`](https://pypi.org/project/holidays/) package (official proclamations) |
-| Lockdown phases | NCR ECQ / MECQ / GCQ dates, 2020 | IATF resolutions |
+| **Live hourly congestion**: congestion %, usual-for-this-hour, jam count / length / delay | Metro Manila and Davao City, **refreshed every 6 h**, saved to [`live/manila_hourly.csv`](live/manila_hourly.csv) | [TomTom Traffic Index](https://www.tomtom.com/traffic-index/city/manila/) live feed |
+| **2025 traffic profile**: speed and congestion for each of the 168 hours of the week, monthly figures, worst day | Full year 2025, from billions of anonymised driver trips | [TomTom Traffic Index 2025](https://www.tomtom.com/traffic-index/city/manila/) |
+| **MMDA incident alerts**: time, location, lat/long, type, lanes blocked | 17,128 incidents, Aug 2018 to Dec 2020 | @MMDA alerts, parsed by [Tweet2Map](https://github.com/pbrotoisworo/tweet2map) |
+| **Rainfall**: observed and forecast, hourly | 2018 to today, plus 3 days ahead | [Open-Meteo](https://open-meteo.com) (ERA5 + forecast) |
+| Public holidays | 2018 to today | [`holidays`](https://pypi.org/project/holidays/) (official proclamations) |
+| Lockdown phases | NCR ECQ / MECQ / GCQ, 2020 | IATF resolutions |
 
-`python run.py` downloads the raw files into `data/raw/`. They are not stored in this repo.
+The GitHub Action in [`.github/workflows/collect.yml`](.github/workflows/collect.yml) pulls the TomTom live feed every 6 hours and commits it. The dataset grows by itself, with no keys or manual steps.
 
-**Known gap:** the Tweet2Map archive is missing roughly mid-June to early September 2020. Any day with zero alerts outside the ECQ is flagged as a gap and excluded from training and evaluation.
+## Model 1: live congestion forecast (next 48 hours)
+- **Target:** TomTom live congestion % for Metro Manila, hourly.
+- **Features:** hour, weekday, TomTom's 2025 typical congestion for that hour, live and forecast rainfall, PH holidays.
+- **Test:** the most recent 48 hours, held out from training.
 
-## Key findings
-- **Rush hours are when incidents happen**, with the morning and evening peaks clearly visible ([heatmap](assets/01_heatmap.png)).
-- **EDSA is the hotspot corridor.** The incident map traces EDSA, C5 and Commonwealth almost exactly.
-- **COVID ECQ cut reported incidents by about 95%**, from ~28/day to ~1/day. After reopening (GCQ) they settled at ~10–15/day.
-- **Light rain increases incidents (+8%/hour), but heavy rain does not.** Fewer cars on the road during downpours likely offsets the more dangerous conditions.
-- About **70% of alerts are vehicular accidents**. Stalled vehicles are the next most common type.
+| Last 48 h, Nov 4–6 2026 | MAE (congestion points) |
+|---|---|
+| TomTom 2025 typical profile | 43.8 |
+| TomTom "usual for this hour" | 39.5 |
+| **This model** | **15.9** |
 
-## Model
-- Gradient boosting with a **Poisson loss** (suited to count data). Features: hour, weekday, month, holiday, payday, quarantine level, rain (this hour and the last 3 hours).
-- **Time-based split:** trained on Aug 2018 to Aug 2020, tested on Sep–Dec 2020, which the model never saw.
+![Forecast](assets/12_forecast_48h.png)
+
+## Model 2: MMDA incident forecast
+- Gradient boosting with a Poisson loss on hourly incident counts.
+- Features: hour, weekday, month, holiday, payday, quarantine level, rain (this hour and the last 3 hours).
+- Trained on Aug 2018 to Aug 2020 and tested on Sep–Dec 2020.
 
 | Test: Sep–Dec 2020 | Hour × weekday average | **Model** |
 |---|---|---|
 | Hourly MAE | 0.554 | **0.522** |
-| Daily MAE (avg ~11 incidents/day) | 5.37 | **4.96** |
+| Daily MAE (~11 incidents/day) | 5.37 | **4.96** |
 
-![Actual vs predicted](assets/07_actual_vs_pred.png)
+## Key findings
+- **This week (Oct 30 – Nov 6, 2026), Metro Manila ran 41% above its usual congestion.** Weekday evening peaks hit 175%, meaning trips took 2.75× as long as on a free road. The Nov 1–2 All Saints' / All Souls' long weekend was the only time traffic fell below usual.
+- **The evening rush is the worst time of the week.** In 2025, the 6 PM congestion averaged 103% across the metro, and rush-hour speeds were around 16 km/h.
+- **EDSA is the incident hotspot.** The incident map traces EDSA, C5 and Commonwealth almost exactly.
+- **The COVID ECQ cut reported incidents by about 95%**, from ~28/day to ~1/day.
+- **Light rain increases incidents (+8%/hour), but heavy rain does not.** Fewer cars on the road during downpours likely offsets the more dangerous conditions.
 
-## All visuals
+## Visuals
 | | |
 |---|---|
-| ![](assets/01_heatmap.png) | ![](assets/02_covid_timeline.png) |
-| ![](assets/04_top_locations.png) | ![](assets/05_rain_effect.png) |
-| ![](assets/06_incident_types.png) | ![](assets/08_feature_importance.png) |
+| ![](assets/11_speed_profile_2025.png) | ![](assets/10_jams_this_week.png) |
+| ![](assets/03_hotspot_map.png) | ![](assets/02_covid_timeline.png) |
+| ![](assets/01_heatmap.png) | ![](assets/05_rain_effect.png) |
+| ![](assets/04_top_locations.png) | ![](assets/07_actual_vs_pred.png) |
 
-## Context: Metro Manila traffic today (published figures)
-- In the TomTom Traffic Index 2025, a 10 km drive took 31m45s in central Manila, and rush-hour speed averaged 15.2 km/h ([TomTom](https://www.tomtom.com/traffic-index/city/manila/), [Manila Bulletin](https://mb.com.ph/2026/01/22/davao-city-remains-most-traffic-congested-city-in-ph-tomtom-traffic-index)).
-- EDSA carried 407,342 vehicles/day in the MMDA AADT 2023 report and ~434k/day at the December 2025 peak ([Top Gear PH](https://www.topgear.com.ph/features/feature-articles/mmda-aadt-report-2023-a2619-20240522), [Manila Bulletin](https://mb.com.ph/2025/12/12/edsa-traffic-hits-holiday-peak-with-434k-vehicles-mmda)).
-
-## 📅 Live dashboard: this week's data
-```bash
-streamlit run app.py
-```
-- **This week:** an hourly incident forecast for the current week. It uses **live Open-Meteo rainfall** (observed for the past 7 days, forecast for the next 7) and this year's PH holidays, and lists the riskiest hours.
-- **Live speeds:** real current speeds and congestion on EDSA (7 segments), C5, Commonwealth, España and Roxas Blvd, plus a 7-day EDSA speed chart.
-- **Hotspot map:** an interactive 3D hexagon map with year, incident-type and hour filters.
-- **Patterns:** hourly and daily incident trends.
-
-## 🛰️ Live speed collection (real data, every hour)
-`src/collect_tomtom.py` and the GitHub Action in `.github/workflows/collect.yml` record **real TomTom speeds every hour** at 12 points on Metro Manila's main roads. The readings are committed to `live/speeds.csv`, so the repo builds its own up-to-date speed history.
-
-Setup (one time):
-1. Get a free API key at [developer.tomtom.com](https://developer.tomtom.com). The free tier allows 2,500 calls/day, and this uses 288.
-2. In the repo, go to Settings → Secrets → Actions and add `TOMTOM_API_KEY`.
-3. Go to Actions → "Collect live traffic speeds" → Run workflow. After that it runs every hour.
-
-## Run the analysis
+## 📅 Live dashboard
 ```bash
 pip install -r requirements.txt
-python run.py
+streamlit run app.py
+```
+The dashboard has four tabs:
+- **This week (live):** current congestion vs usual, jam counts, and a Manila vs Davao comparison.
+- **Next 48 h:** the congestion forecast plus expected MMDA incidents.
+- **Incident hotspots:** a 3D map with year, type and hour filters.
+- **2025 patterns:** TomTom's hourly speed and congestion profiles.
+
+## Rebuild everything
+```bash
+python run.py        # downloads data, trains both models, writes assets/ and results.json
 ```
 
-## Data notes
-- The incident model is trained on MMDA alerts from 2018–2020, the full public archive. Forecasts for this week combine that learned pattern with live weather and calendar data.
-- Speed data from 2026 onward comes from the live TomTom collector.
-- Requesting newer MMDA incident logs through [FOI](https://www.foi.gov.ph/agencies/mmda/) would extend the incident archive.
-
 ## Tech
-Python · pandas · scikit-learn · matplotlib · Open-Meteo API
+Python · pandas · scikit-learn · matplotlib · Streamlit · pydeck · GitHub Actions

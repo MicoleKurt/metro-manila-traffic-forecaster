@@ -1,18 +1,21 @@
-🚦 I mapped 17,000 real MMDA traffic incidents and trained a model to forecast them.
+🚦 This week, Metro Manila traffic ran 41% worse than usual. I built a model that sees it coming.
 
-Using real MMDA incident alerts (2018–2020), hourly ERA5 rainfall and official PH holidays, I built a Metro Manila Traffic Incident Forecaster.
+My Metro Manila Traffic Forecaster runs on live, real data:
+📡 TomTom's hourly congestion feed, collected automatically every 6 hours
+📊 TomTom's 2025 speed profile for every hour of the week
+🚨 17,000 real MMDA incident alerts
+🌧️ Live and forecast rainfall (Open-Meteo) and official PH holidays
 
-What the data showed:
-📍 EDSA is the hotspot. The incident map traces EDSA, C5 and Commonwealth almost exactly.
-🕗 Incidents peak during the morning and evening rush hours.
-🦠 The 2020 ECQ cut reported incidents by about 95%, from ~28 a day to ~1.
-🌧️ Light rain increases incidents per hour, but heavy rain doesn't. Fewer cars on the road during downpours likely offsets the risk.
-🚗 About 70% of alerts are vehicular accidents.
+What the data shows:
+🔴 Weekday evening peaks this week hit 175% congestion, so trips took 2.75× as long as on an empty road
+🕯️ The Undas long weekend (Nov 1–2) was the only time traffic dropped below normal
+🐢 In 2025, rush-hour speeds across the metro averaged about 16 km/h
+📍 EDSA, C5 and Commonwealth are the incident hotspots
 
-📊 The model is a Poisson gradient-boosting model with a time-based train/test split. On 4 months of unseen data it beat the historical-average baseline by 8% on daily incident counts.
+📈 The 48-hour congestion forecast missed by 15.9 points on average over the last two days. TomTom's own "usual for this hour" estimate missed by 39.5.
 
-Every number comes from public data: MMDA, Open-Meteo/ERA5 and the official holiday proclamations.
+Built with Python, scikit-learn, Streamlit and GitHub Actions. The dataset updates itself.
 
 🔗 https://github.com/MicoleKurt/metro-manila-traffic-forecaster
 
-#MachineLearning #DataScience #Python #Philippines #MetroManila #EDSA #MMDA #Traffic #OpenData
+#MachineLearning #DataScience #Python #Philippines #MetroManila #EDSA #Traffic #OpenData #Streamlit

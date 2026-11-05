@@ -154,7 +154,57 @@ def main():
     ax.set_title("What drives incident counts? (permutation importance)")
     ax.grid(axis="x", alpha=.4)
     save(fig, "08_feature_importance.png")
+    live_section(metrics)
     print("4/4 done")
+
+
+def live_section(metrics):
+    """Real live TomTom congestion (this week) + 2025 TomTom profile + 48 h forecast."""
+    global NOTE
+    from src.congestion import run as run_live
+    print("live: TomTom congestion this week")
+    data, te, fut, m, live, prof = run_live()
+    metrics["live_congestion"] = m
+    Path("results.json").write_text(json.dumps(metrics, indent=2, default=str))
+    print(json.dumps(m, indent=2, default=str))
+    NOTE = "Data: TomTom Traffic Index (live + 2025), Open-Meteo rainfall"
+
+    # 9 this week: live vs usual
+    fig, ax = plt.subplots(figsize=(16, 7))
+    ax.plot(data.timestamp, data.congestion, color=ACC3, lw=2.2, label="Live (this week)")
+    ax.plot(data.timestamp, data.usual, color=MUTED, lw=1.5, ls="--", label="TomTom usual for that hour")
+    ax.set_title(f"Metro Manila congestion, {data.timestamp.min():%b %d} - {data.timestamp.max():%b %d, %Y}")
+    ax.set_ylabel("congestion level (%)"); ax.grid(alpha=.4); ax.legend()
+    save(fig, "09_live_this_week.png")
+
+    # 10 jams
+    mm = live[live.city == "Metro Manila"]
+    fig, ax = plt.subplots(figsize=(16, 6))
+    ax.fill_between(mm.timestamp, mm.jams_length_km, color=ACC, alpha=.6)
+    ax.set_title(f"Total traffic-jam length in Metro Manila this week (peak {mm.jams_length_km.max():.0f} km)")
+    ax.set_ylabel("km of jams"); ax.grid(alpha=.4)
+    save(fig, "10_jams_this_week.png")
+
+    # 11 TomTom 2025 profile heatmap (real)
+    piv = prof.pivot_table("typical_speed_2025", "dow", "hour")
+    fig, ax = plt.subplots(figsize=(16, 6))
+    im = ax.imshow(piv, aspect="auto", cmap="RdYlGn")
+    ax.set_yticks(range(7), DAYS)
+    ax.set_xticks(range(0, 24, 2), [f"{h}:00" for h in range(0, 24, 2)])
+    ax.set_title("Metro Manila average speed by hour and weekday, full year 2025 (km/h)")
+    fig.colorbar(im, ax=ax, label="km/h")
+    save(fig, "11_speed_profile_2025.png")
+
+    # 12 forecast
+    fig, ax = plt.subplots(figsize=(16, 7))
+    hist = data[data.timestamp >= data.timestamp.max() - pd.Timedelta(hours=48)]
+    ax.plot(hist.timestamp, hist.congestion, color=FG, lw=2, label="Actual (live)")
+    ax.fill_between(fut.timestamp, fut.lo, fut.hi, color=ACC, alpha=.25, label="80% interval")
+    ax.plot(fut.timestamp, fut.forecast, color=ACC, lw=2.4, label="Forecast")
+    ax.set_title(f"Next 48 hours: Metro Manila congestion forecast (test MAE {m['MAE_model']:.1f} pts "
+                 f"vs {m['MAE_tomtom_usual']:.1f} for TomTom 'usual')")
+    ax.set_ylabel("congestion level (%)"); ax.grid(alpha=.4); ax.legend()
+    save(fig, "12_forecast_48h.png")
 
 
 if __name__ == "__main__":
